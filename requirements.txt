@@ -15,8 +15,7 @@ transformers==4.46.3
 torch==2.5.1
 
 datasets==3.1.0
-pyarrow==18.1.0
-
+pyarrow==17.0.0
 pypdf
 PyPDF2
 huggingface-hub
