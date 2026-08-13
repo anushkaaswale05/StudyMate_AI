@@ -1,7 +1,7 @@
 streamlit
 langchain
-langchain-community
 langchain-core
+langchain-community
 langchain-text-splitters
 langchain-groq
 langchain-chroma
@@ -11,6 +11,6 @@ sentence-transformers
 transformers
 torch
 pypdf
+PyPDF2
 huggingface-hub
-datasets
 numpy
