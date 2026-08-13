@@ -12,47 +12,10 @@ import tempfile
 from pathlib import Path
 from typing import Dict, List, Any
 
-# Import your existing modules - FIXED IMPORTS
+# Import your existing modules
 from rag import ask_question
 from summarizer import summarize_topic
 from quiz import generate_quiz
-
-# Try importing optional modules with error handling
-try:
-    from chroma_store import ChromaStore
-except ImportError:
-    # If ChromaStore doesn't exist, create a placeholder
-    class ChromaStore:
-        def __init__(self, *args, **kwargs):
-            pass
-
-try:
-    from embeddings import EmbeddingManager
-except ImportError:
-    class EmbeddingManager:
-        def __init__(self, *args, **kwargs):
-            pass
-
-try:
-    from loader import DocumentLoader
-except ImportError:
-    class DocumentLoader:
-        def __init__(self, *args, **kwargs):
-            pass
-
-try:
-    from splitter import TextSplitter
-except ImportError:
-    class TextSplitter:
-        def __init__(self, *args, **kwargs):
-            pass
-
-try:
-    from retriever import Retriever
-except ImportError:
-    class Retriever:
-        def __init__(self, *args, **kwargs):
-            pass
 
 
 # ============================================================
@@ -129,7 +92,6 @@ class QuestionAgent(StudyAgent):
         start_time = time.time()
         
         try:
-            # Use the RAG system to get answer
             answer = ask_question(query)
             
             self.last_response = {
@@ -352,23 +314,6 @@ class OrchestratorAgent:
         
         return result
     
-    def execute_parallel(self, tasks: List[Dict]) -> List[Dict]:
-        """Execute multiple agents in sequence"""
-        results = []
-        for task in tasks:
-            agent_type = task.get("agent")
-            query = task.get("query")
-            context = task.get("context", {})
-            
-            result = self.execute(agent_type, query, context)
-            results.append({
-                "agent": agent_type,
-                "query": query,
-                "result": result
-            })
-        
-        return results
-    
     def get_agent_status(self) -> Dict:
         """Get status of all agents"""
         return {name: agent.get_status() for name, agent in self.agents.items()}
@@ -413,16 +358,10 @@ DEFAULT_STATE = {
     "summary_result": "",
     "explanation_result": "",
     "theme": "dark",
-    "font_size": "medium",
-    "show_timestamps": True,
-    "study_sessions": 0,
-    "total_questions_asked": 0,
-    "total_quizzes_taken": 0,
     "uploaded_pdfs": [],
     "current_pdf_content": "",
     "pdf_processed": False,
     "agent_results": [],
-    "show_agent_dashboard": False,
 }
 
 for key, value in DEFAULT_STATE.items():
@@ -515,27 +454,6 @@ def format_file_size(size_in_bytes):
     return f"{size_in_bytes:.1f} TB"
 
 
-def get_theme_colors():
-    if st.session_state.theme == "dark":
-        return {
-            "bg": "#08080D",
-            "bg_secondary": "#101018",
-            "bg_card": "rgba(255,255,255,0.035)",
-            "text": "#E8E8F0",
-            "text_secondary": "#85859A",
-            "border": "rgba(255,255,255,0.06)",
-        }
-    else:
-        return {
-            "bg": "#F8FAFC",
-            "bg_secondary": "#FFFFFF",
-            "bg_card": "rgba(255,255,255,0.8)",
-            "text": "#1E293B",
-            "text_secondary": "#64748B",
-            "border": "rgba(0,0,0,0.08)",
-        }
-
-
 def render_agent_status():
     """Render agent status dashboard"""
     orchestrator = st.session_state.orchestrator
@@ -557,57 +475,108 @@ def render_agent_status():
 
 
 # ============================================================
-# CSS
+# COMPREHENSIVE CSS WITH THEME SUPPORT
 # ============================================================
 
-st.markdown("""
+# Determine theme
+is_dark = st.session_state.theme == "dark"
+
+# Theme colors
+if is_dark:
+    bg_color = "#0E1117"
+    bg_secondary = "#262730"
+    bg_card = "rgba(255,255,255,0.05)"
+    text_color = "#FAFAFA"
+    text_secondary = "#A0A0A0"
+    border_color = "rgba(255,255,255,0.1)"
+    gradient_start = "#6366F1"
+    gradient_end = "#8B5CF6"
+else:
+    bg_color = "#FFFFFF"
+    bg_secondary = "#F0F2F6"
+    bg_card = "rgba(0,0,0,0.03)"
+    text_color = "#262730"
+    text_secondary = "#6B6B6B"
+    border_color = "rgba(0,0,0,0.08)"
+    gradient_start = "#6366F1"
+    gradient_end = "#8B5CF6"
+
+st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-* {
-    box-sizing: border-box;
-}
+/* ============================================================
+   GLOBAL - FIXED FOR DEPLOYMENT
+   ============================================================ */
 
-.block-container {
+.stApp {{
+    background: {bg_color};
+    color: {text_color};
+}}
+
+.block-container {{
     max-width: 1300px;
     padding-top: 1rem;
     padding-bottom: 4rem;
-}
+}}
 
-html, body, [class*="css"] {
+html, body, [class*="css"] {{
     font-family: 'Inter', sans-serif;
-}
+    color: {text_color};
+}}
 
-#MainMenu {
+/* Fix for all text elements */
+p, div, span, li, label, h1, h2, h3, h4, h5, h6 {{
+    color: {text_color};
+}}
+
+/* Streamlit specific fixes */
+.stMarkdown, .stText, .stCaption, .stException {{
+    color: {text_color} !important;
+}}
+
+/* Hide default elements */
+#MainMenu {{
     visibility: hidden;
-}
+}}
 
-footer {
+footer {{
     visibility: hidden;
-}
+}}
 
-header[data-testid="stHeader"] {
+header[data-testid="stHeader"] {{
     background: transparent;
-}
+}}
 
-/* Scrollbar */
-::-webkit-scrollbar {
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar {{
     width: 7px;
-}
-::-webkit-scrollbar-track {
-    background: #101018;
-}
-::-webkit-scrollbar-thumb {
-    background: #4F46E5;
+}}
+::-webkit-scrollbar-track {{
+    background: {bg_secondary};
+}}
+::-webkit-scrollbar-thumb {{
+    background: {gradient_start};
     border-radius: 20px;
-}
+}}
 
-/* Sidebar */
-section[data-testid="stSidebar"] > div {
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+section[data-testid="stSidebar"] {{
+    background: {bg_secondary};
+    border-right: 1px solid {border_color};
+}}
+
+section[data-testid="stSidebar"] > div {{
     padding: 1.3rem 1rem;
-}
+}}
 
-section[data-testid="stSidebar"] .stButton > button {
+section[data-testid="stSidebar"] .stButton > button {{
     width: 100%;
     background: transparent;
     border: 1px solid transparent;
@@ -617,19 +586,53 @@ section[data-testid="stSidebar"] .stButton > button {
     text-align: left;
     min-height: 45px;
     transition: all 0.2s ease;
-    color: #A9A9BE;
-}
+    color: {text_secondary};
+}}
 
-section[data-testid="stSidebar"] .stButton > button:hover {
+section[data-testid="stSidebar"] .stButton > button:hover {{
     background: rgba(99,102,241,0.10);
     border-color: rgba(99,102,241,0.16);
-    color: #FFFFFF;
-}
+    color: {text_color};
+}}
 
-/* Buttons */
+/* ============================================================
+   INPUTS - FIXED
+   ============================================================ */
+
+.stTextInput input {{
+    border-radius: 13px !important;
+    min-height: 45px;
+    background: {bg_card} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_color} !important;
+}}
+
+.stTextInput input::placeholder {{
+    color: {text_secondary} !important;
+}}
+
+.stTextInput label {{
+    color: {text_color} !important;
+}}
+
+.stSelectbox > div > div {{
+    border-radius: 13px;
+    background: {bg_card};
+    border: 1px solid {border_color};
+    color: {text_color};
+}}
+
+.stSelectbox label {{
+    color: {text_color} !important;
+}}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
 .stButton > button,
-.stFormSubmitButton > button {
-    background: linear-gradient(135deg, #6366F1, #7C3AED) !important;
+.stFormSubmitButton > button {{
+    background: linear-gradient(135deg, {gradient_start}, {gradient_end}) !important;
     color: white !important;
     border: none !important;
     border-radius: 12px !important;
@@ -637,32 +640,134 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     font-weight: 600;
     transition: 0.2s ease;
     box-shadow: 0 5px 20px rgba(99,102,241,0.18);
-}
+}}
 
 .stButton > button:hover,
-.stFormSubmitButton > button:hover {
+.stFormSubmitButton > button:hover {{
     transform: translateY(-2px);
     box-shadow: 0 9px 28px rgba(99,102,241,0.30);
-}
+}}
 
-/* Inputs */
-.stTextInput input {
-    border-radius: 13px !important;
-    min-height: 45px;
-    background: rgba(255,255,255,0.045) !important;
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255,255,255,0.09) !important;
-}
+/* ============================================================
+   WIDGETS
+   ============================================================ */
 
-.stTextInput input::placeholder {
-    color: #68687D !important;
-}
+.stCheckbox label {{
+    color: {text_color} !important;
+}}
 
-.stSelectbox > div > div {
-    border-radius: 13px;
-    background: rgba(255,255,255,0.045);
-    border: 1px solid rgba(255,255,255,0.09);
-}
+.stRadio label {{
+    color: {text_color} !important;
+}}
+
+.stFileUploader label {{
+    color: {text_color} !important;
+}}
+
+/* ============================================================
+   WARNINGS & INFO
+   ============================================================ */
+
+.stAlert {{
+    background: {bg_card} !important;
+    border-color: {border_color} !important;
+    color: {text_color} !important;
+}}
+
+.stAlert p {{
+    color: {text_color} !important;
+}}
+
+.stWarning {{
+    background: {bg_card} !important;
+    border-color: #FBBF24 !important;
+}}
+
+.stError {{
+    background: {bg_card} !important;
+    border-color: #EF4444 !important;
+}}
+
+.stSuccess {{
+    background: {bg_card} !important;
+    border-color: #34D399 !important;
+}}
+
+.stInfo {{
+    background: {bg_card} !important;
+    border-color: #60A5FA !important;
+}}
+
+/* ============================================================
+   EXPANDER
+   ============================================================ */
+
+.streamlit-expanderHeader {{
+    color: {text_color} !important;
+    background: {bg_card} !important;
+}}
+
+.streamlit-expanderContent {{
+    color: {text_color} !important;
+    background: {bg_card} !important;
+}}
+
+/* ============================================================
+   DATA FRAME
+   ============================================================ */
+
+.dataframe {{
+    color: {text_color} !important;
+    background: {bg_card} !important;
+}}
+
+.dataframe thead tr th {{
+    color: {text_color} !important;
+}}
+
+.dataframe tbody tr td {{
+    color: {text_color} !important;
+}}
+
+/* ============================================================
+   CUSTOM COMPONENTS
+   ============================================================ */
+
+.custom-card {{
+    background: {bg_card};
+    border: 1px solid {border_color};
+    border-radius: 14px;
+    padding: 16px;
+    margin: 10px 0;
+}}
+
+.custom-header {{
+    color: {text_color};
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 21px;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 5px;
+}}
+
+.custom-subheader {{
+    color: {text_secondary};
+    font-size: 12px;
+    margin-bottom: 18px;
+}}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media(max-width: 800px) {{
+    .hero-title {{
+        font-size: 29px;
+    }}
+    .hero {{
+        padding: 28px;
+    }}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -672,17 +777,17 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 # ============================================================
 
 with st.sidebar:
-    render_html("""
-    <div style="display: flex; align-items: center; gap: 13px; padding: 8px 5px 25px 5px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.06);">
-        <div style="width: 47px; height: 47px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #6366F1, #8B5CF6); font-size: 23px; box-shadow: 0 8px 30px rgba(99,102,241,0.3);">🤖</div>
+    render_html(f"""
+    <div style="display: flex; align-items: center; gap: 13px; padding: 8px 5px 25px 5px; margin-bottom: 15px; border-bottom: 1px solid {border_color};">
+        <div style="width: 47px; height: 47px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, {gradient_start}, {gradient_end}); font-size: 23px; box-shadow: 0 8px 30px rgba(99,102,241,0.3);">🤖</div>
         <div>
-            <div style="color: #FFFFFF; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700;">Multi-Agent</div>
-            <div style="color: #85859A; font-size: 11px; margin-top: 2px;">AI Study System</div>
+            <div style="color: {text_color}; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700;">Multi-Agent</div>
+            <div style="color: {text_secondary}; font-size: 11px; margin-top: 2px;">AI Study System</div>
         </div>
     </div>
     """)
     
-    st.markdown('<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: #64647C;">📚 Workspace</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: {text_secondary};">📚 Workspace</div>', unsafe_allow_html=True)
     
     if st.button("💬  Multi-Agent Chat", use_container_width=True):
         switch_feature("Chat")
@@ -708,7 +813,7 @@ with st.sidebar:
         switch_feature("AgentDashboard")
         st.rerun()
     
-    st.markdown('<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: #64647C;">📄 Upload PDF</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: {text_secondary};">📄 Upload PDF</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader(
         "Upload PDF Document",
@@ -737,29 +842,24 @@ with st.sidebar:
                     st.rerun()
     
     if st.session_state.uploaded_pdfs:
-        st.markdown('<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: #64647C;">📁 Uploaded Files</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: {text_secondary};">📁 Uploaded Files</div>', unsafe_allow_html=True)
         for pdf in st.session_state.uploaded_pdfs:
             render_html(f"""
-            <div style="background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 13px; padding: 13px 14px; margin-bottom: 9px;">
-                <div style="color: #E8E8F0; font-size: 12px; font-weight: 600;">📄 {pdf['name']}</div>
-                <div style="color: #77778D; font-size: 10px; margin-top: 5px;">
+            <div style="background: {bg_card}; border: 1px solid {border_color}; border-radius: 13px; padding: 13px 14px; margin-bottom: 9px;">
+                <div style="color: {text_color}; font-size: 12px; font-weight: 600;">📄 {pdf['name']}</div>
+                <div style="color: {text_secondary}; font-size: 10px; margin-top: 5px;">
                     <span style="display: inline-block; width: 7px; height: 7px; background: #34D399; border-radius: 50%; margin-right: 5px;"></span>
                     {pdf['pages']} pages • {pdf['words']} words • {pdf['size']}
                 </div>
             </div>
             """)
     
-    st.markdown('<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: #64647C;">⚙️ Settings</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin: 24px 7px 10px 7px; color: {text_secondary};">⚙️ Settings</div>', unsafe_allow_html=True)
     
-    theme_label = "☀️ Light" if st.session_state.theme == "dark" else "🌙 Dark"
+    theme_label = "☀️ Light" if is_dark else "🌙 Dark"
     if st.button(f"{theme_label} Mode", use_container_width=True):
         toggle_theme()
         st.rerun()
-    
-    st.session_state.show_timestamps = st.checkbox(
-        "Show Timestamps",
-        value=st.session_state.show_timestamps
-    )
 
 
 # ============================================================
@@ -767,13 +867,13 @@ with st.sidebar:
 # ============================================================
 
 # Header
-render_html("""
-<div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 0 25px 0; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 28px;">
+render_html(f"""
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 0 25px 0; border-bottom: 1px solid {border_color}; margin-bottom: 28px;">
     <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="width: 51px; height: 51px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #6366F1, #8B5CF6); font-size: 25px; box-shadow: 0 8px 28px rgba(99,102,241,0.25);">🤖</div>
+        <div style="width: 51px; height: 51px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, {gradient_start}, {gradient_end}); font-size: 25px; box-shadow: 0 8px 28px rgba(99,102,241,0.25);">🤖</div>
         <div>
-            <div style="color: #FFFFFF; font-family: 'Space Grotesk', sans-serif; font-size: 25px; font-weight: 700;">Multi-Agent Study System</div>
-            <div style="color: #85859A; font-size: 12px; margin-top: 3px;">5 specialized AI agents working together</div>
+            <div style="color: {text_color}; font-family: 'Space Grotesk', sans-serif; font-size: 25px; font-weight: 700;">Multi-Agent Study System</div>
+            <div style="color: {text_secondary}; font-size: 12px; margin-top: 3px;">5 specialized AI agents working together</div>
         </div>
     </div>
     <div style="color: #34D399; background: rgba(16,185,129,0.10); border: 1px solid rgba(16,185,129,0.18); border-radius: 999px; padding: 8px 14px; font-size: 11px; font-weight: 600;">● System Active</div>
@@ -790,25 +890,25 @@ stats = orchestrator.get_statistics()
 
 st.markdown(f"""
 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin: 20px 0;">
-    <div style="background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px; text-align: center;">
-        <div style="font-size: 28px; font-weight: 700; color: #818CF8;">{stats['total_executions']}</div>
-        <div style="font-size: 11px; color: #77778D; margin-top: 4px;">Total Executions</div>
+    <div style="background: {bg_card}; border: 1px solid {border_color}; border-radius: 14px; padding: 18px; text-align: center;">
+        <div style="font-size: 28px; font-weight: 700; color: {gradient_start};">{stats['total_executions']}</div>
+        <div style="font-size: 11px; color: {text_secondary}; margin-top: 4px;">Total Executions</div>
     </div>
-    <div style="background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px; text-align: center;">
+    <div style="background: {bg_card}; border: 1px solid {border_color}; border-radius: 14px; padding: 18px; text-align: center;">
         <div style="font-size: 28px; font-weight: 700; color: #34D399;">{stats['success_rate']:.1f}%</div>
-        <div style="font-size: 11px; color: #77778D; margin-top: 4px;">Success Rate</div>
+        <div style="font-size: 11px; color: {text_secondary}; margin-top: 4px;">Success Rate</div>
     </div>
-    <div style="background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px; text-align: center;">
+    <div style="background: {bg_card}; border: 1px solid {border_color}; border-radius: 14px; padding: 18px; text-align: center;">
         <div style="font-size: 28px; font-weight: 700; color: #60A5FA;">{stats['avg_duration']:.2f}s</div>
-        <div style="font-size: 11px; color: #77778D; margin-top: 4px;">Avg Response Time</div>
+        <div style="font-size: 11px; color: {text_secondary}; margin-top: 4px;">Avg Response Time</div>
     </div>
-    <div style="background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px; text-align: center;">
+    <div style="background: {bg_card}; border: 1px solid {border_color}; border-radius: 14px; padding: 18px; text-align: center;">
         <div style="font-size: 28px; font-weight: 700; color: #FBBF24;">{len(st.session_state.uploaded_pdfs)}</div>
-        <div style="font-size: 11px; color: #77778D; margin-top: 4px;">PDFs Uploaded</div>
+        <div style="font-size: 11px; color: {text_secondary}; margin-top: 4px;">PDFs Uploaded</div>
     </div>
-    <div style="background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px; text-align: center;">
+    <div style="background: {bg_card}; border: 1px solid {border_color}; border-radius: 14px; padding: 18px; text-align: center;">
         <div style="font-size: 28px; font-weight: 700; color: #A78BFA;">{len(orchestrator.agents)}</div>
-        <div style="font-size: 11px; color: #77778D; margin-top: 4px;">Active Agents</div>
+        <div style="font-size: 11px; color: {text_secondary}; margin-top: 4px;">Active Agents</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -819,8 +919,8 @@ st.markdown(f"""
 # ============================================================
 
 if st.session_state.selected_feature == "Chat":
-    st.markdown('<div style="color: #FFFFFF; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">💬 Multi-Agent Chat</div>', unsafe_allow_html=True)
-    st.markdown('<div style="color: #77778D; font-size: 12px; margin-bottom: 18px;">Select an agent to handle your query</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_color}; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">💬 Multi-Agent Chat</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_secondary}; font-size: 12px; margin-bottom: 18px;">Select an agent to handle your query</div>', unsafe_allow_html=True)
     
     # Agent selector with icons
     agent_type = st.selectbox(
@@ -839,14 +939,14 @@ if st.session_state.selected_feature == "Chat":
     for message in st.session_state.messages:
         if message["role"] == "user":
             safe_text = html_escape.escape(str(message["content"]))
-            timestamp = f"<div style='font-size:9px;color:#77778D;text-align:right;margin-top:4px;'>{message.get('timestamp', '')}</div>" if st.session_state.show_timestamps else ""
-            render_html(f'<div style="background: linear-gradient(135deg, #6366F1, #7C3AED); color: white; border-radius: 18px 18px 4px 18px; padding: 14px 18px; max-width: 78%; margin: 10px 0 10px auto; line-height: 1.6;">{safe_text}{timestamp}</div>')
+            timestamp = f"<div style='font-size:9px;color:{text_secondary};text-align:right;margin-top:4px;'>{message.get('timestamp', '')}</div>" if st.session_state.get('show_timestamps', True) else ""
+            render_html(f'<div style="background: linear-gradient(135deg, {gradient_start}, {gradient_end}); color: white; border-radius: 18px 18px 4px 18px; padding: 14px 18px; max-width: 78%; margin: 10px 0 10px auto; line-height: 1.6;">{safe_text}{timestamp}</div>')
         else:
-            timestamp = f"<div style='font-size:9px;color:#77778D;text-align:right;margin-top:8px;'>{message.get('timestamp', '')}</div>" if st.session_state.show_timestamps else ""
+            timestamp = f"<div style='font-size:9px;color:{text_secondary};text-align:right;margin-top:8px;'>{message.get('timestamp', '')}</div>" if st.session_state.get('show_timestamps', True) else ""
             agent_name = message.get("agent", "StudyMate AI")
             render_html(f"""
-            <div style="background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); color: #E8E8F0; border-radius: 18px 18px 18px 4px; padding: 18px 20px; max-width: 88%; margin: 10px auto 10px 0; line-height: 1.7;">
-                <div style="color: #818CF8; font-size: 11px; font-weight: 700; margin-bottom: 8px;">🤖 {agent_name}</div>
+            <div style="background: {bg_card}; border: 1px solid {border_color}; color: {text_color}; border-radius: 18px 18px 18px 4px; padding: 18px 20px; max-width: 88%; margin: 10px auto 10px 0; line-height: 1.7;">
+                <div style="color: {gradient_start}; font-size: 11px; font-weight: 700; margin-bottom: 8px;">🤖 {agent_name}</div>
                 {message["content"]}
                 {timestamp}
             </div>
@@ -865,7 +965,7 @@ if st.session_state.selected_feature == "Chat":
             ask_clicked = st.form_submit_button("Ask ✨", use_container_width=True)
     
     if ask_clicked and question.strip():
-        timestamp = datetime.now().strftime("%H:%M") if st.session_state.show_timestamps else ""
+        timestamp = datetime.now().strftime("%H:%M")
         st.session_state.messages.append({"role": "user", "content": question, "timestamp": timestamp})
         
         with st.spinner(f"🤖 {agent_type.capitalize()} Agent is processing..."):
@@ -903,8 +1003,8 @@ if st.session_state.selected_feature == "Chat":
 # ============================================================
 
 elif st.session_state.selected_feature == "AgentDashboard":
-    st.markdown('<div style="color: #FFFFFF; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">🤖 Multi-Agent Dashboard</div>', unsafe_allow_html=True)
-    st.markdown('<div style="color: #77778D; font-size: 12px; margin-bottom: 18px;">Monitor and control all AI agents in the system</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_color}; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">🤖 Multi-Agent Dashboard</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_secondary}; font-size: 12px; margin-bottom: 18px;">Monitor and control all AI agents in the system</div>', unsafe_allow_html=True)
     
     # Agent Status
     st.markdown("### 🟢 Agent Status")
@@ -916,23 +1016,23 @@ elif st.session_state.selected_feature == "AgentDashboard":
     
     if stats["total_executions"] > 0:
         render_html(f"""
-        <div style="background: rgba(255,255,255,0.035); border-radius: 12px; padding: 16px; margin: 10px 0;">
+        <div style="background: {bg_card}; border-radius: 12px; padding: 16px; margin: 10px 0; border: 1px solid {border_color};">
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                 <div style="text-align: center;">
-                    <div style="font-size: 20px; font-weight: 700; color: #818CF8;">{stats['total_executions']}</div>
-                    <div style="font-size: 10px; color: #77778D;">Total Executions</div>
+                    <div style="font-size: 20px; font-weight: 700; color: {gradient_start};">{stats['total_executions']}</div>
+                    <div style="font-size: 10px; color: {text_secondary};">Total Executions</div>
                 </div>
                 <div style="text-align: center;">
                     <div style="font-size: 20px; font-weight: 700; color: #34D399;">{stats['success_rate']:.1f}%</div>
-                    <div style="font-size: 10px; color: #77778D;">Success Rate</div>
+                    <div style="font-size: 10px; color: {text_secondary};">Success Rate</div>
                 </div>
                 <div style="text-align: center;">
                     <div style="font-size: 20px; font-weight: 700; color: #F87171;">{stats['total_executions'] - int(stats['success_rate'] * stats['total_executions'] / 100)}</div>
-                    <div style="font-size: 10px; color: #77778D;">Errors</div>
+                    <div style="font-size: 10px; color: {text_secondary};">Errors</div>
                 </div>
                 <div style="text-align: center;">
                     <div style="font-size: 20px; font-weight: 700; color: #60A5FA;">{stats['avg_duration']:.2f}s</div>
-                    <div style="font-size: 10px; color: #77778D;">Avg Duration</div>
+                    <div style="font-size: 10px; color: {text_secondary};">Avg Duration</div>
                 </div>
             </div>
         </div>
@@ -943,16 +1043,16 @@ elif st.session_state.selected_feature == "AgentDashboard":
     history = st.session_state.orchestrator.execution_history
     
     if history:
-        for h in history[-10:]:  # Show last 10
+        for h in history[-10:]:
             status_icon = "✅" if h["status"] == "completed" else "❌" if h["status"] == "error" else "⏳"
             render_html(f"""
-            <div style="background: rgba(255,255,255,0.035); border-radius: 8px; padding: 10px 14px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: {bg_card}; border: 1px solid {border_color}; border-radius: 8px; padding: 10px 14px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <span style="font-weight: 600; color: #E8E8F0;">{h['agent'].capitalize()}</span>
-                    <span style="color: #77778D; font-size: 11px; margin-left: 10px;">{h['query']}</span>
+                    <span style="font-weight: 600; color: {text_color};">{h['agent'].capitalize()}</span>
+                    <span style="color: {text_secondary}; font-size: 11px; margin-left: 10px;">{h['query']}</span>
                 </div>
                 <div>
-                    <span style="color: #77778D; font-size: 11px;">{h['duration']:.2f}s</span>
+                    <span style="color: {text_secondary}; font-size: 11px;">{h['duration']:.2f}s</span>
                     <span style="margin-left: 10px;">{status_icon}</span>
                 </div>
             </div>
@@ -979,8 +1079,8 @@ elif st.session_state.selected_feature == "AgentDashboard":
 # ============================================================
 
 elif st.session_state.selected_feature == "Summary":
-    st.markdown('<div style="color: #FFFFFF; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">📝 Summarize with AI</div>', unsafe_allow_html=True)
-    st.markdown('<div style="color: #77778D; font-size: 12px; margin-bottom: 18px;">Get a concise summary of any topic from your documents</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_color}; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">📝 Summarize with AI</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_secondary}; font-size: 12px; margin-bottom: 18px;">Get a concise summary of any topic from your documents</div>', unsafe_allow_html=True)
     
     if not st.session_state.uploaded_pdfs:
         st.info("📄 Please upload a PDF document first to generate summaries.")
@@ -997,7 +1097,7 @@ elif st.session_state.selected_feature == "Summary":
             with st.spinner("🤖 Summarizer Agent is working..."):
                 result = st.session_state.orchestrator.execute("summarize", summary_topic, {"topic": summary_topic, "style": summary_style})
                 if result.get("type") != "error":
-                    st.markdown(f"<div style='background: rgba(255,255,255,0.035); border-radius: 18px; padding: 24px; line-height: 1.8; margin-top: 18px; color: #E8E8F0;'>{result['content']}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background: {bg_card}; border: 1px solid {border_color}; border-radius: 18px; padding: 24px; line-height: 1.8; margin-top: 18px; color: {text_color};'>{result['content']}</div>", unsafe_allow_html=True)
 
 
 # ============================================================
@@ -1005,8 +1105,8 @@ elif st.session_state.selected_feature == "Summary":
 # ============================================================
 
 elif st.session_state.selected_feature == "Quiz":
-    st.markdown('<div style="color: #FFFFFF; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">❓ Generate Quiz</div>', unsafe_allow_html=True)
-    st.markdown('<div style="color: #77778D; font-size: 12px; margin-bottom: 18px;">Test your knowledge with AI-generated questions</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_color}; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">❓ Generate Quiz</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_secondary}; font-size: 12px; margin-bottom: 18px;">Test your knowledge with AI-generated questions</div>', unsafe_allow_html=True)
     
     if not st.session_state.uploaded_pdfs:
         st.info("📄 Please upload a PDF document first to generate quizzes.")
@@ -1031,7 +1131,7 @@ elif st.session_state.selected_feature == "Quiz":
                         st.session_state.quiz_score = 0
                         st.rerun()
     
-    # Display quiz (your existing quiz display code)
+    # Display quiz (simplified)
     if st.session_state.quiz_questions:
         # ... (keep your existing quiz display logic)
         pass
@@ -1042,8 +1142,8 @@ elif st.session_state.selected_feature == "Quiz":
 # ============================================================
 
 elif st.session_state.selected_feature == "Explain":
-    st.markdown('<div style="color: #FFFFFF; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">🧠 Explain Concept</div>', unsafe_allow_html=True)
-    st.markdown('<div style="color: #77778D; font-size: 12px; margin-bottom: 18px;">Get a clear explanation of any concept from your documents</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_color}; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">🧠 Explain Concept</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_secondary}; font-size: 12px; margin-bottom: 18px;">Get a clear explanation of any concept from your documents</div>', unsafe_allow_html=True)
     
     if not st.session_state.uploaded_pdfs:
         st.info("📄 Please upload a PDF document first to get explanations.")
@@ -1060,7 +1160,7 @@ elif st.session_state.selected_feature == "Explain":
             with st.spinner("🤖 Explainer Agent is working..."):
                 result = st.session_state.orchestrator.execute("explain", concept, {"concept": concept, "level": level})
                 if result.get("type") != "error":
-                    st.markdown(f"<div style='background: rgba(255,255,255,0.035); border-radius: 18px; padding: 24px; line-height: 1.8; margin-top: 18px; color: #E8E8F0;'>{result['content']}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background: {bg_card}; border: 1px solid {border_color}; border-radius: 18px; padding: 24px; line-height: 1.8; margin-top: 18px; color: {text_color};'>{result['content']}</div>", unsafe_allow_html=True)
 
 
 # ============================================================
@@ -1068,8 +1168,8 @@ elif st.session_state.selected_feature == "Explain":
 # ============================================================
 
 elif st.session_state.selected_feature == "Research":
-    st.markdown('<div style="color: #FFFFFF; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">🔬 Research & Analysis</div>', unsafe_allow_html=True)
-    st.markdown('<div style="color: #77778D; font-size: 12px; margin-bottom: 18px;">Deep research and analysis using your documents</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_color}; font-family: Space Grotesk, sans-serif; font-size: 21px; font-weight: 700; margin-top: 28px; margin-bottom: 5px;">🔬 Research & Analysis</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="color: {text_secondary}; font-size: 12px; margin-bottom: 18px;">Deep research and analysis using your documents</div>', unsafe_allow_html=True)
     
     if not st.session_state.uploaded_pdfs:
         st.info("📄 Please upload a PDF document first to conduct research.")
@@ -1086,7 +1186,7 @@ elif st.session_state.selected_feature == "Research":
             with st.spinner("🔬 Research Analyst is analyzing..."):
                 result = st.session_state.orchestrator.execute("research", research_topic, {"depth": research_depth})
                 if result.get("type") != "error":
-                    st.markdown(f"<div style='background: rgba(255,255,255,0.035); border-radius: 18px; padding: 24px; line-height: 1.8; margin-top: 18px; color: #E8E8F0;'>{result['content']}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background: {bg_card}; border: 1px solid {border_color}; border-radius: 18px; padding: 24px; line-height: 1.8; margin-top: 18px; color: {text_color};'>{result['content']}</div>", unsafe_allow_html=True)
 
 
 # ============================================================
@@ -1094,11 +1194,11 @@ elif st.session_state.selected_feature == "Research":
 # ============================================================
 
 st.markdown(f"""
-<div style="text-align: center; font-size: 11px; margin-top: 60px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.05); color: #5E5E73;">
-    <span style="color: #818CF8; font-weight: 700;">🤖 Multi-Agent StudyMate AI</span>
+<div style="text-align: center; font-size: 11px; margin-top: 60px; padding-top: 22px; border-top: 1px solid {border_color}; color: {text_secondary};">
+    <span style="color: {gradient_start}; font-weight: 700;">🤖 Multi-Agent StudyMate AI</span>
     <span>• Powered by RAG + 5 Specialized Agents</span>
     <br>
-    <span style="font-size: 11px; color: #5E5E73;">
+    <span style="font-size: 11px; color: {text_secondary};">
         QA • Summarizer • Quiz Master • Explainer • Research Analyst
         {f'• {datetime.now().strftime("%B %d, %Y")}'}
     </span>
