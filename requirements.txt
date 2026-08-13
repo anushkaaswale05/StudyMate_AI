@@ -5,6 +5,7 @@ langchain-core
 langchain-text-splitters
 langchain-groq
 langchain-chroma
+langchain-huggingface
 chromadb
 sentence-transformers
 transformers
